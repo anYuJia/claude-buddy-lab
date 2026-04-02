@@ -857,11 +857,11 @@
         'status.found': 'Found',
         'status.matches': 'matches',
         'status.noMatches': 'No matches found. Try relaxing filters.',
-        'status.applied': '✓ Buddy applied! Config backed up.',
+        'status.applied': '✓ Buddy applied! Binary patched successfully.',
         'status.applyFailed': 'Failed to apply: ',
-        'note.apply': 'This will update your Claude config file',
+        'note.apply': 'This will patch the Claude Code binary to change your buddy',
         'modal.applyTitle': 'Apply this Buddy?',
-        'modal.applyDesc': 'This will update your Claude configuration file. A backup will be created automatically.',
+        'modal.applyDesc': 'This will patch the Claude Code binary file to apply the new salt. The original salt is recorded for restoration.',
         'rarity.common': 'Common',
         'rarity.uncommon': 'Uncommon',
         'rarity.rare': 'Rare',
@@ -935,11 +935,11 @@
         'status.found': '找到',
         'status.matches': '个结果',
         'status.noMatches': '未找到匹配结果，请尝试放宽筛选条件。',
-        'status.applied': '✓ 伙伴已应用！配置已备份。',
+        'status.applied': '✓ 伙伴已应用！二进制文件修补成功。',
         'status.applyFailed': '应用失败：',
-        'note.apply': '这将更新你的 Claude 配置文件',
+        'note.apply': '这将修补 Claude Code 二进制文件来更换你的伙伴',
         'modal.applyTitle': '应用此伙伴？',
-        'modal.applyDesc': '这将更新你的 Claude 配置文件。系统会自动创建备份。',
+        'modal.applyDesc': '这将修补 Claude Code 的二进制文件来应用新的 salt。原始 salt 会被记录以便恢复。',
         'rarity.common': '普通',
         'rarity.uncommon': '不凡',
         'rarity.rare': '稀有',
@@ -981,8 +981,11 @@
     // Species list for translation
     const SPECIES_LIST = ['duck', 'goose', 'blob', 'cat', 'dragon', 'octopus', 'owl', 'penguin', 'turtle', 'snail', 'ghost', 'axolotl', 'capybara', 'cactus', 'robot', 'rabbit', 'mushroom', 'chonk'];
 
-    let currentLang = 'en';
+    let currentLang = (navigator.language || '').startsWith('zh') ? 'zh' : 'en';
     let pendingApplySalt = null;
+
+    // Apply initial language on load
+    document.addEventListener('DOMContentLoaded', () => setLanguage(currentLang));
 
     function setLanguage(lang) {
       currentLang = lang;

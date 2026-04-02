@@ -11,6 +11,9 @@ Usage:
 import json
 import hashlib
 import random
+import re
+import shutil
+import subprocess
 import sys
 import os
 from pathlib import Path
@@ -229,6 +232,98 @@ def detect_user_id():
     return None
 
 
+# ============== Binary Patching ==============
+SALT_PATTERNS = [
+    re.compile(rb'friend-\d{4}-\d+'),
+    re.compile(rb'ccbf-\d{10}'),
+    re.compile(rb'lab-\d{11}'),
+]
+
+STATE_FILE = Path.home() / ".claude-buddy-lab.json"
+
+
+def find_claude_binary():
+    result = shutil.which("claude")
+    if not result:
+        return None
+    return str(Path(result).resolve())
+
+
+def detect_binary_salt(binary_path=None):
+    if not binary_path:
+        binary_path = find_claude_binary()
+    if not binary_path or not Path(binary_path).exists():
+        return None
+    data = Path(binary_path).read_bytes()
+    for pattern in SALT_PATTERNS:
+        m = pattern.search(data)
+        if m:
+            return {"salt": m.group(0).decode("ascii"), "length": len(m.group(0)), "filePath": binary_path}
+    return None
+
+
+def replace_salt_in_binary(search_salt, new_salt, binary_path):
+    if len(search_salt) != len(new_salt):
+        raise ValueError(f"Salt length mismatch: '{search_salt}' ({len(search_salt)}) vs '{new_salt}' ({len(new_salt)})")
+    data = bytearray(Path(binary_path).read_bytes())
+    search_bytes = search_salt.encode("utf-8")
+    replace_bytes = new_salt.encode("utf-8")
+    offsets = []
+    pos = 0
+    while True:
+        idx = data.find(search_bytes, pos)
+        if idx == -1:
+            break
+        offsets.append(idx)
+        pos = idx + 1
+    if not offsets:
+        raise ValueError(f'Could not find "{search_salt}" in binary bytes.')
+    for offset in offsets:
+        data[offset:offset + len(replace_bytes)] = replace_bytes
+    Path(binary_path).write_bytes(bytes(data))
+    resign_binary(binary_path)
+    return {"filePath": binary_path, "patchCount": len(offsets)}
+
+
+def resign_binary(file_path):
+    if sys.platform != "darwin":
+        return
+    try:
+        subprocess.run(["codesign", "--force", "--sign", "-", file_path],
+                       capture_output=True, check=True)
+    except Exception as e:
+        raise RuntimeError(f"Binary patch succeeded but macOS ad-hoc signing failed: {e}")
+
+
+def read_state():
+    if STATE_FILE.exists():
+        try:
+            return json.loads(STATE_FILE.read_text())
+        except:
+            pass
+    return {"version": 1, "binaries": {}}
+
+
+def write_state(state):
+    STATE_FILE.write_text(json.dumps(state, indent=2))
+
+
+def record_original_salt(binary_path, original_salt):
+    state = read_state()
+    if binary_path not in state.get("binaries", {}):
+        state.setdefault("binaries", {})[binary_path] = {
+            "originalSalt": original_salt,
+            "recordedAt": __import__("datetime").datetime.now().isoformat(),
+        }
+        write_state(state)
+
+
+def get_recorded_original_salt(binary_path):
+    state = read_state()
+    entry = state.get("binaries", {}).get(binary_path)
+    return entry["originalSalt"] if entry else None
+
+
 def generate_salt(prefix, index, length):
     if len(prefix) > length:
         raise ValueError(f"Prefix too long")
@@ -357,9 +452,16 @@ def cmd_web(args):
 
     @app.route("/api/meta", methods=["GET"])
     def meta():
+        detected = detect_binary_salt()
         return jsonify({
             "species": SPECIES, "rarities": RARITIES, "eyes": EYES, "hats": HATS,
             "defaultSalt": DEFAULT_SALT, "detectedUserId": detect_user_id(),
+            "binary": {
+                "path": detected["filePath"],
+                "currentSalt": detected["salt"],
+                "saltLength": detected["length"],
+                "originalSaltRecorded": get_recorded_original_salt(detected["filePath"]),
+            } if detected else None,
         })
 
     @app.route("/api/preview", methods=["POST"])
@@ -400,6 +502,20 @@ def cmd_web(args):
         except Exception as e:
             return jsonify({"error": str(e)}), 500
 
+    @app.route("/api/binary", methods=["GET"])
+    def binary_api():
+        detected = detect_binary_salt()
+        if not detected:
+            return jsonify({"binary": None})
+        return jsonify({
+            "binary": {
+                "path": detected["filePath"],
+                "currentSalt": detected["salt"],
+                "saltLength": detected["length"],
+                "originalSaltRecorded": get_recorded_original_salt(detected["filePath"]),
+            }
+        })
+
     @app.route("/api/apply", methods=["POST"])
     def apply_api():
         try:
@@ -410,35 +526,55 @@ def cmd_web(args):
             if not salt:
                 return jsonify({"success": False, "error": "Salt required"}), 400
 
-            # Find Claude config
-            home = Path.home()
-            config_paths = [
-                home / ".claude" / ".config.json",
-                home / ".claude.json",
-            ]
+            binary_path = data.get("binaryPath") or find_claude_binary()
+            if not binary_path:
+                return jsonify({"success": False, "error": "Could not find claude binary."}), 400
 
-            config_path = None
-            for p in config_paths:
-                if p.exists():
-                    config_path = p
-                    break
+            detected = detect_binary_salt(binary_path)
+            if not detected:
+                return jsonify({"success": False, "error": "Could not detect current salt in Claude Code binary."}), 400
 
-            if not config_path:
-                return jsonify({"success": False, "error": "Claude config not found"}), 404
+            record_original_salt(detected["filePath"], detected["salt"])
+            result = replace_salt_in_binary(detected["salt"], salt, detected["filePath"])
+            return jsonify({
+                "success": True,
+                "filePath": result["filePath"],
+                "patchCount": result["patchCount"],
+                "oldSalt": detected["salt"],
+                "newSalt": salt,
+                "originalSaltRecorded": get_recorded_original_salt(detected["filePath"]),
+            })
 
-            # Backup
-            backup_path = config_path.with_suffix(config_path.suffix + '.bak')
-            backup_path.write_text(config_path.read_text())
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)}), 500
 
-            # Read and update
-            config = json.loads(config_path.read_text())
+    @app.route("/api/restore", methods=["POST"])
+    def restore_api():
+        try:
+            data = request.get_json() or {}
+            binary_path = data.get("binaryPath") or find_claude_binary()
+            if not binary_path:
+                return jsonify({"success": False, "error": "Could not find claude binary."}), 400
 
-            if 'buddy' not in config:
-                config['buddy'] = {}
-            config['buddy']['salt'] = salt
+            original_salt = get_recorded_original_salt(binary_path)
+            if not original_salt:
+                return jsonify({"success": False, "error": "No recorded original salt found for this binary."}), 400
 
-            config_path.write_text(json.dumps(config, indent=2))
-            return jsonify({"success": True, "backup": str(backup_path)})
+            detected = detect_binary_salt(binary_path)
+            if not detected:
+                return jsonify({"success": False, "error": "Could not detect current salt in binary."}), 400
+
+            if detected["salt"] == original_salt:
+                return jsonify({"success": True, "message": "Already at original salt.", "patchCount": 0})
+
+            result = replace_salt_in_binary(detected["salt"], original_salt, detected["filePath"])
+            return jsonify({
+                "success": True,
+                "filePath": result["filePath"],
+                "patchCount": result["patchCount"],
+                "previousSalt": detected["salt"],
+                "restoredSalt": original_salt,
+            })
 
         except Exception as e:
             return jsonify({"success": False, "error": str(e)}), 500
