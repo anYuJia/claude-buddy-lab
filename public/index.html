@@ -733,6 +733,11 @@
               <input type="number" id="total" value="500000" min="1000" max="10000000">
             </div>
           </div>
+
+          <label class="checkbox-wrapper" for="shinySearch">
+            <input type="checkbox" id="shinySearch">
+            <span data-i18n="label.shinyOnly">✨ Shiny Only (1% chance)</span>
+          </label>
         </div>
 
         <!-- Filters Section -->
@@ -835,6 +840,7 @@
         'btn.search': 'Search',
         'btn.previewThis': 'Preview This',
         'btn.apply': 'Apply to Claude',
+        'btn.applyShort': '✓ Apply',
         'btn.cancel': 'Cancel',
         'btn.confirm': 'Apply',
         'option.any': 'Any',
@@ -912,6 +918,7 @@
         'btn.search': '搜索',
         'btn.previewThis': '预览这个',
         'btn.apply': '应用到 Claude',
+        'btn.applyShort': '✓ 应用',
         'btn.cancel': '取消',
         'btn.confirm': '应用',
         'option.any': '任意',
@@ -1225,19 +1232,35 @@
             <span>${t['info.eye']}: ${escapeHtml(m.buddy.eye)}</span>
             <span>${t['info.hat']}: ${m.buddy.hat || '-'}</span>
           </div>
-          <button class="secondary">${t['btn.previewThis']}</button>
+          <div style="display:flex;gap:8px;margin-top:12px;">
+            <button class="secondary" style="flex:1;" data-action="preview">${t['btn.previewThis']}</button>
+            <button class="apply-btn" style="flex:1;padding:8px 12px;font-size:0.8rem;" data-action="apply">${t['btn.applyShort']}</button>
+          </div>
         `;
 
-        card.querySelector('button').onclick = (e) => {
+        const userId = $('userId').value || 'anon';
+
+        // Preview button
+        card.querySelector('[data-action="preview"]').onclick = (e) => {
           e.stopPropagation();
           $('salt').value = m.salt;
-          renderPreview({ ...m, userId: $('userId').value || 'anon' });
-          window.lastPreviewData = { ...m, userId: $('userId').value || 'anon' };
+          renderPreview({ ...m, userId });
+          window.lastPreviewData = { ...m, userId };
           pendingApplySalt = m.salt;
           $('applySection').style.display = 'block';
           $('status').className = 'status success';
           $('status').textContent = t['status.previewGenerated'];
           window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        // Apply button
+        card.querySelector('[data-action="apply"]').onclick = (e) => {
+          e.stopPropagation();
+          pendingApplySalt = m.salt;
+          renderPreview({ ...m, userId });
+          window.lastPreviewData = { ...m, userId };
+          $('applySection').style.display = 'block';
+          showApplyModal();
         };
 
         $('results').appendChild(card);
@@ -1251,7 +1274,7 @@
         rarity: $('rarity').value,
         eye: $('eye').value,
         hat: $('hat').value,
-        shiny: $('shiny').checked,
+        shiny: $('shinySearch').checked,
         minStat: $('minStat').value,
         total: parseInt($('total').value) || 500000,
         prefix: $('prefix').value || 'lab-',

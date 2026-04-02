@@ -355,7 +355,7 @@ def cmd_web(args):
     def index():
         return send_from_directory(app.static_folder, "index.html")
 
-    @app.route("/api/meta")
+    @app.route("/api/meta", methods=["GET"])
     def meta():
         return jsonify({
             "species": SPECIES, "rarities": RARITIES, "eyes": EYES, "hats": HATS,
@@ -364,56 +364,68 @@ def cmd_web(args):
 
     @app.route("/api/preview", methods=["POST"])
     def preview_api():
-        data = request.json
-        uid = data.get("userId") or detect_user_id() or "anon"
-        salt = data.get("salt", DEFAULT_SALT)
-        buddy = roll_with_salt(uid, salt)
-        return jsonify({
-            "userId": uid, "salt": salt, "buddy": buddy,
-            "sprite": render_sprite(buddy), "face": render_face(buddy),
-        })
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "JSON body required"}), 400
+            uid = data.get("userId") or detect_user_id() or "anon"
+            salt = data.get("salt", DEFAULT_SALT)
+            buddy = roll_with_salt(uid, salt)
+            return jsonify({
+                "userId": uid, "salt": salt, "buddy": buddy,
+                "sprite": render_sprite(buddy), "face": render_face(buddy),
+            })
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/search", methods=["POST"])
     def search_api():
-        data = request.json
-        uid = data.get("userId") or detect_user_id() or "anon"
-        filters = {k: data.get(k) for k in ["species", "rarity", "eye", "hat"]}
-        filters["shiny"] = data.get("shiny", False)
-        if data.get("minStat"):
-            try:
-                filters["min_stat"] = parse_min_stat(data["minStat"])
-            except:
-                pass
-        matches = search_salts(uid, data.get("total", 100000), data.get("prefix", "lab-"), filters)
-        for m in matches:
-            m["sprite"] = render_sprite(m["buddy"])
-            m["face"] = render_face(m["buddy"])
-        return jsonify({"matches": matches, "searched": len(matches)})
+        try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"error": "JSON body required"}), 400
+            uid = data.get("userId") or detect_user_id() or "anon"
+            filters = {k: data.get(k) for k in ["species", "rarity", "eye", "hat"]}
+            filters["shiny"] = data.get("shiny", False)
+            if data.get("minStat"):
+                try:
+                    filters["min_stat"] = parse_min_stat(data["minStat"])
+                except:
+                    pass
+            matches = search_salts(uid, data.get("total", 100000), data.get("prefix", "lab-"), filters)
+            for m in matches:
+                m["sprite"] = render_sprite(m["buddy"])
+                m["face"] = render_face(m["buddy"])
+            return jsonify({"matches": matches, "searched": len(matches)})
+        except Exception as e:
+            return jsonify({"error": str(e)}), 500
 
     @app.route("/api/apply", methods=["POST"])
     def apply_api():
-        data = request.json
-        salt = data.get("salt")
-        if not salt:
-            return jsonify({"success": False, "error": "Salt required"})
-
-        # Find Claude config
-        home = Path.home()
-        config_paths = [
-            home / ".claude" / ".config.json",
-            home / ".claude.json",
-        ]
-
-        config_path = None
-        for p in config_paths:
-            if p.exists():
-                config_path = p
-                break
-
-        if not config_path:
-            return jsonify({"success": False, "error": "Claude config not found"})
-
         try:
+            data = request.get_json()
+            if not data:
+                return jsonify({"success": False, "error": "JSON body required"}), 400
+            salt = data.get("salt")
+            if not salt:
+                return jsonify({"success": False, "error": "Salt required"}), 400
+
+            # Find Claude config
+            home = Path.home()
+            config_paths = [
+                home / ".claude" / ".config.json",
+                home / ".claude.json",
+            ]
+
+            config_path = None
+            for p in config_paths:
+                if p.exists():
+                    config_path = p
+                    break
+
+            if not config_path:
+                return jsonify({"success": False, "error": "Claude config not found"}), 404
+
             # Backup
             backup_path = config_path.with_suffix(config_path.suffix + '.bak')
             backup_path.write_text(config_path.read_text())
@@ -429,7 +441,7 @@ def cmd_web(args):
             return jsonify({"success": True, "backup": str(backup_path)})
 
         except Exception as e:
-            return jsonify({"success": False, "error": str(e)})
+            return jsonify({"success": False, "error": str(e)}), 500
 
     import webbrowser, threading
     if "--open" in args:
