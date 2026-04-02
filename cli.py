@@ -390,6 +390,47 @@ def cmd_web(args):
             m["face"] = render_face(m["buddy"])
         return jsonify({"matches": matches, "searched": len(matches)})
 
+    @app.route("/api/apply", methods=["POST"])
+    def apply_api():
+        data = request.json
+        salt = data.get("salt")
+        if not salt:
+            return jsonify({"success": False, "error": "Salt required"})
+
+        # Find Claude config
+        home = Path.home()
+        config_paths = [
+            home / ".claude" / ".config.json",
+            home / ".claude.json",
+        ]
+
+        config_path = None
+        for p in config_paths:
+            if p.exists():
+                config_path = p
+                break
+
+        if not config_path:
+            return jsonify({"success": False, "error": "Claude config not found"})
+
+        try:
+            # Backup
+            backup_path = config_path.with_suffix(config_path.suffix + '.bak')
+            backup_path.write_text(config_path.read_text())
+
+            # Read and update
+            config = json.loads(config_path.read_text())
+
+            if 'buddy' not in config:
+                config['buddy'] = {}
+            config['buddy']['salt'] = salt
+
+            config_path.write_text(json.dumps(config, indent=2))
+            return jsonify({"success": True, "backup": str(backup_path)})
+
+        except Exception as e:
+            return jsonify({"success": False, "error": str(e)})
+
     import webbrowser, threading
     if "--open" in args:
         threading.Timer(1, lambda: webbrowser.open(f"http://{host}:{port}")).start()

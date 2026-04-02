@@ -6,7 +6,7 @@
   <title>Claude Buddy Lab</title>
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet">
   <style>
     :root {
       --bg-primary: #0a0a0f;
@@ -35,7 +35,7 @@
     * { box-sizing: border-box; margin: 0; padding: 0; }
 
     body {
-      font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+      font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, sans-serif;
       background: var(--bg-primary);
       color: var(--text-primary);
       line-height: 1.6;
@@ -65,36 +65,39 @@
       z-index: 1;
     }
 
-    /* Language Switcher */
+    /* Language Switcher - Redesigned */
     .lang-switcher {
       position: absolute;
-      top: 20px;
+      top: 24px;
       right: 20px;
       display: flex;
-      gap: 8px;
+      background: var(--bg-input);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 4px;
+      gap: 4px;
       z-index: 100;
     }
 
     .lang-btn {
-      padding: 8px 14px;
-      background: var(--bg-card);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      font-size: 0.85rem;
-      font-weight: 500;
+      padding: 6px 12px;
+      background: transparent;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.8rem;
+      font-weight: 600;
       color: var(--text-secondary);
       cursor: pointer;
       transition: all 0.2s;
     }
 
     .lang-btn:hover {
-      border-color: var(--border-highlight);
       color: var(--text-primary);
+      background: var(--bg-card);
     }
 
     .lang-btn.active {
       background: var(--accent);
-      border-color: var(--accent);
       color: white;
     }
 
@@ -576,6 +579,78 @@
       color: var(--accent-secondary);
       margin-top: 15px;
     }
+
+    /* Apply Button */
+    .apply-section {
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 1px solid var(--border);
+    }
+
+    .apply-btn {
+      background: linear-gradient(135deg, var(--success) 0%, #059669 100%);
+    }
+
+    .apply-btn:hover {
+      box-shadow: 0 10px 30px rgba(16, 185, 129, 0.3);
+    }
+
+    .apply-note {
+      font-size: 0.8rem;
+      color: var(--text-muted);
+      text-align: center;
+      margin-top: 10px;
+    }
+
+    .modal-overlay {
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: rgba(0, 0, 0, 0.7);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity 0.2s;
+    }
+
+    .modal-overlay.active {
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .modal {
+      background: var(--bg-secondary);
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      padding: 30px;
+      max-width: 400px;
+      text-align: center;
+    }
+
+    .modal h3 {
+      color: var(--text-primary);
+      margin-bottom: 15px;
+    }
+
+    .modal p {
+      color: var(--text-secondary);
+      margin-bottom: 20px;
+      line-height: 1.6;
+    }
+
+    .modal-actions {
+      display: flex;
+      gap: 10px;
+    }
+
+    .modal-actions button {
+      flex: 1;
+    }
   </style>
 </head>
 <body>
@@ -585,7 +660,7 @@
     <!-- Language Switcher -->
     <div class="lang-switcher">
       <button class="lang-btn active" data-lang="en">EN</button>
-      <button class="lang-btn" data-lang="zh">中文</button>
+      <button class="lang-btn" data-lang="zh">中</button>
     </div>
 
     <header>
@@ -650,7 +725,7 @@
             <div class="form-group">
               <label for="hat" data-i18n="label.hat">Hat</label>
               <select id="hat">
-                <option value="" data-i18n="option.noneOnly">None Only</option>
+                <option value="" data-i18n="option.any">Any</option>
               </select>
             </div>
             <div class="form-group">
@@ -698,6 +773,14 @@
           </div>
 
           <div id="previewContainer"></div>
+
+          <!-- Apply Section (shown after preview) -->
+          <div class="apply-section" id="applySection" style="display: none;">
+            <button id="applyBtn" class="apply-btn">
+              <span>✓</span> <span data-i18n="btn.apply">Apply to Claude</span>
+            </button>
+            <p class="apply-note" data-i18n="note.apply">This will update your Claude config file</p>
+          </div>
         </div>
 
         <!-- Results Panel -->
@@ -713,6 +796,18 @@
 
           <div class="results-grid" id="results"></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Apply Confirmation Modal -->
+  <div class="modal-overlay" id="modalOverlay">
+    <div class="modal">
+      <h3 data-i18n="modal.applyTitle">Apply this Buddy?</h3>
+      <p data-i18n="modal.applyDesc">This will update your Claude configuration file. A backup will be created automatically.</p>
+      <div class="modal-actions">
+        <button class="secondary" id="modalCancel" data-i18n="btn.cancel">Cancel</button>
+        <button class="apply-btn" id="modalConfirm" data-i18n="btn.confirm">Apply</button>
       </div>
     </div>
   </div>
@@ -739,6 +834,9 @@
         'btn.preview': 'Preview Buddy',
         'btn.search': 'Search',
         'btn.previewThis': 'Preview This',
+        'btn.apply': 'Apply to Claude',
+        'btn.cancel': 'Cancel',
+        'btn.confirm': 'Apply',
         'option.any': 'Any',
         'option.anySpecies': 'Any Species',
         'option.noneOnly': 'None Only',
@@ -750,9 +848,14 @@
         'status.searching': 'Searching...',
         'status.generatingPreview': 'Generating preview...',
         'status.previewGenerated': '✓ Preview generated',
-        'status.found': '✓ Found',
-        'status.matches': 'match',
+        'status.found': 'Found',
+        'status.matches': 'matches',
         'status.noMatches': 'No matches found. Try relaxing filters.',
+        'status.applied': '✓ Buddy applied! Config backed up.',
+        'status.applyFailed': 'Failed to apply: ',
+        'note.apply': 'This will update your Claude config file',
+        'modal.applyTitle': 'Apply this Buddy?',
+        'modal.applyDesc': 'This will update your Claude configuration file. A backup will be created automatically.',
         'rarity.common': 'Common',
         'rarity.uncommon': 'Uncommon',
         'rarity.rare': 'Rare',
@@ -764,13 +867,30 @@
         'info.hat': 'Hat',
         'info.shiny': 'Shiny',
         'info.yes': 'YES',
-        'info.eye_label': 'Eye',
-        'info.hat_label': 'Hat',
         'stat.DEBUGGING': 'DEBUGGING',
         'stat.PATIENCE': 'PATIENCE',
         'stat.CHAOS': 'CHAOS',
         'stat.WISDOM': 'WISDOM',
-        'stat.SNARK': 'SNARK'
+        'stat.SNARK': 'SNARK',
+        // Species names
+        'species.duck': 'Duck',
+        'species.goose': 'Goose',
+        'species.blob': 'Blob',
+        'species.cat': 'Cat',
+        'species.dragon': 'Dragon',
+        'species.octopus': 'Octopus',
+        'species.owl': 'Owl',
+        'species.penguin': 'Penguin',
+        'species.turtle': 'Turtle',
+        'species.snail': 'Snail',
+        'species.ghost': 'Ghost',
+        'species.axolotl': 'Axolotl',
+        'species.capybara': 'Capybara',
+        'species.cactus': 'Cactus',
+        'species.robot': 'Robot',
+        'species.rabbit': 'Rabbit',
+        'species.mushroom': 'Mushroom',
+        'species.chonk': 'Chonk'
       },
       zh: {
         'header.subtitle': '发现你的完美 Claude Code 伙伴',
@@ -791,20 +911,28 @@
         'btn.preview': '预览伙伴',
         'btn.search': '搜索',
         'btn.previewThis': '预览这个',
+        'btn.apply': '应用到 Claude',
+        'btn.cancel': '取消',
+        'btn.confirm': '应用',
         'option.any': '任意',
         'option.anySpecies': '任意物种',
         'option.noneOnly': '仅无帽',
         'placeholder.autoDetect': '自动检测',
         'placeholder.enterSalt': '输入盐值',
-        'placeholder.chaos80': 'CHAOS:80',
+        'placeholder.chaos80': '例如：CHAOS:80',
         'status.initializing': '初始化中...',
         'status.noSearch': '尚未执行搜索',
         'status.searching': '搜索中...',
         'status.generatingPreview': '生成预览中...',
         'status.previewGenerated': '✓ 预览已生成',
-        'status.found': '✓ 找到',
+        'status.found': '找到',
         'status.matches': '个结果',
         'status.noMatches': '未找到匹配结果，请尝试放宽筛选条件。',
+        'status.applied': '✓ 伙伴已应用！配置已备份。',
+        'status.applyFailed': '应用失败：',
+        'note.apply': '这将更新你的 Claude 配置文件',
+        'modal.applyTitle': '应用此伙伴？',
+        'modal.applyDesc': '这将更新你的 Claude 配置文件。系统会自动创建备份。',
         'rarity.common': '普通',
         'rarity.uncommon': '不凡',
         'rarity.rare': '稀有',
@@ -816,17 +944,38 @@
         'info.hat': '帽子',
         'info.shiny': '闪光',
         'info.yes': '是',
-        'info.eye_label': '眼睛',
-        'info.hat_label': '帽子',
         'stat.DEBUGGING': '调试',
         'stat.PATIENCE': '耐心',
         'stat.CHAOS': '混乱',
         'stat.WISDOM': '智慧',
-        'stat.SNARK': '讽刺'
+        'stat.SNARK': '讽刺',
+        // Species names - 中文翻译
+        'species.duck': '鸭子',
+        'species.goose': '鹅',
+        'species.blob': '团子',
+        'species.cat': '猫',
+        'species.dragon': '龙',
+        'species.octopus': '章鱼',
+        'species.owl': '猫头鹰',
+        'species.penguin': '企鹅',
+        'species.turtle': '乌龟',
+        'species.snail': '蜗牛',
+        'species.ghost': '幽灵',
+        'species.axolotl': '蝾螈',
+        'species.capybara': '水豚',
+        'species.cactus': '仙人掌',
+        'species.robot': '机器人',
+        'species.rabbit': '兔子',
+        'species.mushroom': '蘑菇',
+        'species.chonk': '胖猫'
       }
     };
 
+    // Species list for translation
+    const SPECIES_LIST = ['duck', 'goose', 'blob', 'cat', 'dragon', 'octopus', 'owl', 'penguin', 'turtle', 'snail', 'ghost', 'axolotl', 'capybara', 'cactus', 'robot', 'rabbit', 'mushroom', 'chonk'];
+
     let currentLang = 'en';
+    let pendingApplySalt = null;
 
     function setLanguage(lang) {
       currentLang = lang;
@@ -852,25 +1001,21 @@
         }
       });
 
-      // Re-render if there's a preview
-      if ($('previewContainer').innerHTML) {
-        const lastData = window.lastPreviewData;
-        if (lastData) {
-          renderPreview(lastData);
-        }
+      // Re-render preview if exists
+      if (window.lastPreviewData) {
+        renderPreview(window.lastPreviewData);
       }
 
-      // Update search status
-      const searchStatus = $('searchStatus');
-      if (searchStatus.textContent.includes('✓ Found') || searchStatus.textContent.includes('找到')) {
-        const count = searchStatus.getAttribute('data-count');
-        if (count) {
-          updateSearchStatus(count);
+      // Re-render results
+      if ($('results').children.length > 0) {
+        const matches = window.lastSearchMatches;
+        if (matches) {
+          renderResults(matches, $('searchStatus').getAttribute('data-count'));
         }
       }
     }
 
-    // Language switcher event listeners
+    // Language switcher
     document.querySelectorAll('.lang-btn').forEach(btn => {
       btn.addEventListener('click', () => {
         setLanguage(btn.dataset.lang);
@@ -879,23 +1024,15 @@
 
     const $ = id => document.getElementById(id);
 
-    function updateSearchStatus(count) {
-      const text = count === 1
-        ? `${translations[currentLang]['status.found']} ${count} ${translations[currentLang]['status.matches']}`
-        : `${translations[currentLang]['status.found']} ${count} ${translations[currentLang]['status.matches']}`;
-      $('searchStatus').textContent = text;
-      $('searchStatus').setAttribute('data-count', count);
-    }
-
     async function loadMeta() {
       try {
         const res = await fetch('/api/meta');
         const meta = await res.json();
 
-        fillSelect($('species'), meta.species, 'option.anySpecies');
+        fillSpecies($('species'));
         fillSelect($('rarity'), meta.rarities, 'option.any', true);
         fillSelect($('eye'), meta.eyes, 'option.any');
-        fillSelect($('hat'), meta.hats, 'option.noneOnly', true);
+        fillSelect($('hat'), meta.hats, 'option.any');
 
         if (meta.detectedUserId) {
           $('userId').value = meta.detectedUserId;
@@ -914,7 +1051,24 @@
       }
     }
 
+    function fillSpecies(select) {
+      // Clear existing except first
+      select.innerHTML = '';
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = translations[currentLang]['option.anySpecies'];
+      select.appendChild(defaultOpt);
+
+      for (const s of SPECIES_LIST) {
+        const opt = document.createElement('option');
+        opt.value = s;
+        opt.textContent = translations[currentLang][`species.${s}`] || s;
+        select.appendChild(opt);
+      }
+    }
+
     function fillSelect(select, values, defaultKey, useRarity = false) {
+      select.innerHTML = '';
       const defaultOpt = document.createElement('option');
       defaultOpt.value = '';
       defaultOpt.textContent = translations[currentLang][defaultKey] || defaultKey;
@@ -923,11 +1077,11 @@
       for (const v of values) {
         const opt = document.createElement('option');
         opt.value = v;
-        if (useRarity) {
+        if (v === 'none') {
+          opt.textContent = translations[currentLang]['option.noneOnly'] || 'None';
+        } else if (useRarity) {
           const rarityKey = `rarity.${v}`;
           opt.textContent = translations[currentLang][rarityKey] || v;
-        } else if (v === 'none') {
-          opt.textContent = translations[currentLang]['option.noneOnly'] || 'None';
         } else {
           opt.textContent = v.charAt(0).toUpperCase() + v.slice(1);
         }
@@ -958,6 +1112,7 @@
 
       $('status').className = 'status loading';
       $('status').innerHTML = '<span class="spinner"></span> ' + translations[currentLang]['status.generatingPreview'];
+      $('applySection').style.display = 'none';
 
       try {
         const res = await fetch('/api/preview', {
@@ -970,6 +1125,8 @@
         window.lastPreviewData = data;
         $('status').className = 'status success';
         $('status').textContent = translations[currentLang]['status.previewGenerated'];
+        $('applySection').style.display = 'block';
+        pendingApplySalt = salt;
       } catch (e) {
         $('status').className = 'status error';
         $('status').textContent = 'Error: ' + e.message;
@@ -983,6 +1140,7 @@
 
       const rarityClass = `rarity-${buddy.rarity}`;
       const rarityDisplay = t[`rarity.${buddy.rarity}`] || buddy.rarity;
+      const speciesDisplay = t[`species.${buddy.species}`] || buddy.species;
 
       let html = `
         <div class="preview-card ${buddy.shiny ? 'shiny' : ''}">
@@ -995,7 +1153,7 @@
           <div class="buddy-info">
             <div class="info-pill">
               <div class="label">${t['info.species']}</div>
-              <div class="value">${buddy.species}</div>
+              <div class="value">${speciesDisplay}</div>
             </div>
             <div class="info-pill">
               <div class="label">${t['info.rarity']}</div>
@@ -1045,6 +1203,47 @@
       $('previewContainer').innerHTML = html;
     }
 
+    function renderResults(matches, count) {
+      $('results').innerHTML = '';
+      const t = translations[currentLang];
+
+      for (const m of matches) {
+        const card = document.createElement('div');
+        card.className = 'result-card' + (m.buddy.shiny ? ' shiny' : '');
+        const speciesName = t[`species.${m.buddy.species}`] || m.buddy.species;
+        const rarityName = t[`rarity.${m.buddy.rarity}`] || m.buddy.rarity;
+
+        card.innerHTML = `
+          <div class="sprite">${escapeHtml(m.sprite.join('\n'))}</div>
+          <div class="header">
+            <span class="rarity-badge rarity-${m.buddy.rarity}">${rarityName}</span>
+            <span class="name">${speciesName}</span>
+            ${m.buddy.shiny ? '<span style="color: var(--shiny);">✨</span>' : ''}
+          </div>
+          <div class="salt">${escapeHtml(m.salt)}</div>
+          <div class="details">
+            <span>${t['info.eye']}: ${escapeHtml(m.buddy.eye)}</span>
+            <span>${t['info.hat']}: ${m.buddy.hat || '-'}</span>
+          </div>
+          <button class="secondary">${t['btn.previewThis']}</button>
+        `;
+
+        card.querySelector('button').onclick = (e) => {
+          e.stopPropagation();
+          $('salt').value = m.salt;
+          renderPreview({ ...m, userId: $('userId').value || 'anon' });
+          window.lastPreviewData = { ...m, userId: $('userId').value || 'anon' };
+          pendingApplySalt = m.salt;
+          $('applySection').style.display = 'block';
+          $('status').className = 'status success';
+          $('status').textContent = t['status.previewGenerated'];
+          window.scrollTo({ top: 0, behavior: 'smooth' });
+        };
+
+        $('results').appendChild(card);
+      }
+    }
+
     async function search() {
       const userId = $('userId').value || 'anon';
       const filters = {
@@ -1077,41 +1276,68 @@
         }
 
         $('searchStatus').className = 'status success';
-        updateSearchStatus(data.matches.length);
+        $('searchStatus').setAttribute('data-count', data.matches.length);
+        const count = data.matches.length;
+        const t = translations[currentLang];
+        $('searchStatus').textContent = `${t['status.found']} ${count} ${t['status.matches']}`;
 
-        for (const m of data.matches) {
-          const card = document.createElement('div');
-          card.className = 'result-card' + (m.buddy.shiny ? ' shiny' : '');
-          card.innerHTML = `
-            <div class="sprite">${escapeHtml(m.sprite.join('\n'))}</div>
-            <div class="header">
-              <span class="rarity-badge rarity-${m.buddy.rarity}">${m.buddy.rarity}</span>
-              <span class="name">${m.buddy.species}</span>
-              ${m.buddy.shiny ? '<span style="color: var(--shiny);">✨</span>' : ''}
-            </div>
-            <div class="salt">${escapeHtml(m.salt)}</div>
-            <div class="details">
-              <span>${translations[currentLang]['info.eye']}: ${escapeHtml(m.buddy.eye)}</span>
-              <span>${translations[currentLang]['info.hat']}: ${m.buddy.hat || '-'}</span>
-            </div>
-            <button class="secondary">${translations[currentLang]['btn.previewThis']}</button>
-          `;
+        window.lastSearchMatches = data.matches;
+        renderResults(data.matches, count);
 
-          card.querySelector('button').onclick = (e) => {
-            e.stopPropagation();
-            $('salt').value = m.salt;
-            renderPreview({ ...m, userId });
-            window.lastPreviewData = { ...m, userId };
-            window.scrollTo({ top: 0, behavior: 'smooth' });
-          };
-
-          $('results').appendChild(card);
-        }
       } catch (e) {
         $('searchStatus').className = 'status error';
         $('searchStatus').textContent = 'Error: ' + e.message;
       }
     }
+
+    // Apply functionality
+    function showApplyModal() {
+      $('modalOverlay').classList.add('active');
+    }
+
+    function hideApplyModal() {
+      $('modalOverlay').classList.remove('active');
+    }
+
+    async function applyBuddy() {
+      if (!pendingApplySalt) return;
+
+      const userId = $('userId').value || 'anon';
+
+      try {
+        const res = await fetch('/api/apply', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, salt: pendingApplySalt })
+        });
+        const result = await res.json();
+
+        hideApplyModal();
+
+        if (result.success) {
+          $('status').className = 'status success';
+          $('status').textContent = translations[currentLang]['status.applied'];
+        } else {
+          $('status').className = 'status error';
+          $('status').textContent = translations[currentLang]['status.applyFailed'] + result.error;
+        }
+      } catch (e) {
+        hideApplyModal();
+        $('status').className = 'status error';
+        $('status').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    $('applyBtn').onclick = showApplyModal;
+    $('modalCancel').onclick = hideApplyModal;
+    $('modalConfirm').onclick = applyBuddy;
+
+    // Close modal on overlay click
+    $('modalOverlay').onclick = (e) => {
+      if (e.target === $('modalOverlay')) {
+        hideApplyModal();
+      }
+    };
 
     function escapeHtml(text) {
       const div = document.createElement('div');
