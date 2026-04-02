@@ -6,6 +6,7 @@ Usage:
     python cli.py preview              # Preview current buddy
     python cli.py search --species owl # Search for specific species
     python cli.py web                  # Start web interface
+    python cli.py interactive          # Interactive TUI mode
 """
 
 import json
@@ -14,6 +15,9 @@ import random
 import sys
 import os
 from pathlib import Path
+
+# For interactive mode (using stdlib curses)
+import curses
 
 # ============== Constants ==============
 RARITIES = ["common", "uncommon", "rare", "epic", "legendary"]
@@ -404,15 +408,342 @@ def get_arg(args, flag, default=None):
     return default
 
 
+# ============== Interactive TUI (curses) ==============
+class InteractiveBuddyViewer:
+    def __init__(self, user_id):
+        self.user_id = user_id
+        self.salt_index = 0
+        self.prefix = "lab-"
+        self.filters = {
+            "species": None,
+            "rarity": None,
+            "eye": None,
+            "hat": None,
+            "shiny": False,
+            "min_stat": None,
+        }
+        self.history = []  # List of (salt, buddy) tuples
+        self.history_index = -1
+        self.message = ""
+
+    def generate_next(self):
+        """Generate next buddy matching filters"""
+        max_attempts = 50000
+        for i in range(max_attempts):
+            salt = generate_salt(self.prefix, self.salt_index, len(DEFAULT_SALT))
+            buddy = roll_with_salt(self.user_id, salt)
+            self.salt_index += 1
+
+            if matches_filters(buddy, self.filters):
+                return salt, buddy
+        return None, None
+
+    def draw_main_screen(self, stdscr, salt, buddy):
+        """Draw main preview screen"""
+        stdscr.clear()
+        height, width = stdscr.getmaxyx()
+
+        # Title
+        title = "🧪 Claude Buddy Lab - Interactive Mode "
+        stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(0, max(0, (width - len(title)) // 2), title[:width-1])
+        stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
+
+        # Divider
+        stdscr.addstr(1, 0, "=" * min(60, width-1))
+
+        # Buddy info
+        row = 3
+        info_lines = [
+            f"Salt: {salt}",
+            f"Species: {buddy['species'].capitalize()}  |  Rarity: {buddy['rarity'].capitalize()}",
+            f"Eye: {buddy['eye']}  |  Hat: {buddy['hat']}  |  Shiny: {'✦ Yes' if buddy['shiny'] else 'No'}",
+        ]
+        for line in info_lines:
+            if row < height - 10:
+                stdscr.addstr(row, 2, line[:width-3])
+                row += 1
+
+        # Stats
+        row += 1
+        stdscr.addstr(row, 2, "Stats:", curses.A_BOLD)
+        row += 1
+        for stat, value in buddy["stats"].items():
+            if row < height - 10:
+                bar_len = value // 5
+                bar = "█" * bar_len
+                stat_line = f"  {stat:12} {bar} {value}"
+                stdscr.addstr(row, 2, stat_line[:width-3])
+                row += 1
+
+        # Sprite
+        row += 1
+        stdscr.addstr(row, 2, "Sprite:", curses.A_BOLD)
+        row += 1
+        sprite_lines = render_sprite(buddy)
+        color = curses.color_pair(3) if buddy['shiny'] else curses.color_pair(2)
+        stdscr.attron(color)
+        for line in sprite_lines:
+            if row < height - 8:
+                stdscr.addstr(row, 4, line[:width-5])
+                row += 1
+        stdscr.attroff(color)
+
+        # Face
+        row += 1
+        if row < height - 6:
+            stdscr.addstr(row, 2, f"Face: {render_face(buddy)}", curses.color_pair(3))
+
+        # History position
+        row += 2
+        if self.history:
+            pos_info = f"[{self.history_index + 1}/{len(self.history)} in history]"
+            stdscr.addstr(row, 2, pos_info, curses.color_pair(4))
+
+        # Message
+        if self.message:
+            stdscr.addstr(row + 1, 2, self.message, curses.color_pair(5) | curses.A_BOLD)
+            self.message = ""
+
+        # Controls
+        row = height - 3
+        controls = " n/→:Next  p/←:Prev  r:Re-roll  c:Filters  a:Apply  s:Show salt  q:Quit "
+        stdscr.attron(curses.color_pair(6) | curses.A_REVERSE)
+        stdscr.addstr(row, 0, controls.center(width)[:width-1])
+        stdscr.attroff(curses.color_pair(6) | curses.A_REVERSE)
+
+        stdscr.refresh()
+
+    def draw_filters_screen(self, stdscr):
+        """Draw filter configuration screen"""
+        stdscr.clear()
+        height, width = stdscr.getmaxyx()
+
+        title = " Configure Filters "
+        stdscr.attron(curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(0, max(0, (width - len(title)) // 2), title[:width-1])
+        stdscr.attroff(curses.color_pair(1) | curses.A_BOLD)
+        stdscr.addstr(1, 0, "=" * min(60, width-1))
+
+        row = 4
+        stdscr.addstr(row, 2, "Current filters:", curses.A_BOLD)
+        row += 2
+
+        # Display current filters
+        filter_display = []
+        for k, v in self.filters.items():
+            if v:
+                if k == "min_stat":
+                    filter_display.append(f"{v['name']}>={v['threshold']}")
+                elif k == "shiny":
+                    filter_display.append("shiny ✦")
+                else:
+                    filter_display.append(str(v))
+
+        if filter_display:
+            stdscr.addstr(row, 4, ", ".join(filter_display)[:width-5])
+        else:
+            stdscr.addstr(row, 4, "(none)", curses.color_pair(4))
+        row += 2
+
+        # Instructions
+        stdscr.addstr(row, 2, "Press number keys to toggle filters:", curses.A_BOLD)
+        row += 2
+
+        stdscr.addstr(row, 4, "1. Species (duck)")
+        stdscr.addstr(row, 14, "2. Rarity (common)" if not self.filters['rarity'] else f"2. Rarity ({self.filters['rarity']})")
+        row += 1
+        stdscr.addstr(row, 4, "3. Shiny only: " + ("ON ✦" if self.filters['shiny'] else "OFF"))
+        row += 1
+        stdscr.addstr(row, 4, "4. Clear all filters")
+        row += 2
+
+        stdscr.addstr(row, 2, "Press ENTER to save and return", curses.A_BOLD)
+        row += 1
+        stdscr.addstr(row, 2, "Press ESC to cancel", curses.color_pair(4))
+
+        # Filters hint
+        row += 2
+        stdscr.addstr(row, 2, "Species:", curses.A_BOLD)
+        row += 1
+        species_str = ", ".join(SPECIES[:9])
+        stdscr.addstr(row, 4, species_str[:width-6], curses.color_pair(4))
+        row += 1
+        species_str = ", ".join(SPECIES[9:])
+        stdscr.addstr(row, 4, species_str[:width-6], curses.color_pair(4))
+
+        stdscr.refresh()
+
+    def run_filter_config(self, stdscr):
+        """Run filter configuration interaction"""
+        curses.echo()
+        curses.curs_set(1)
+
+        while True:
+            self.draw_filters_screen(stdscr)
+            key = stdscr.getch()
+
+            if key == 27:  # ESC
+                break
+            elif key == 10 or key == curses.KEY_ENTER:  # Enter
+                # Reset salt index when filters change
+                self.salt_index = 0
+                self.history = []
+                self.history_index = -1
+                break
+            elif key == ord('1'):
+                # Cycle species
+                if not self.filters['species']:
+                    self.filters['species'] = SPECIES[0]
+                else:
+                    idx = (SPECIES.index(self.filters['species']) + 1) % len(SPECIES)
+                    self.filters['species'] = SPECIES[idx]
+            elif key == ord('2'):
+                # Cycle rarity
+                if not self.filters['rarity']:
+                    self.filters['rarity'] = RARITIES[0]
+                else:
+                    idx = (RARITIES.index(self.filters['rarity']) + 1) % len(RARITIES)
+                    self.filters['rarity'] = RARITIES[idx]
+            elif key == ord('3'):
+                # Toggle shiny
+                self.filters['shiny'] = not self.filters['shiny']
+            elif key == ord('4'):
+                # Clear all
+                self.filters = {
+                    "species": None,
+                    "rarity": None,
+                    "eye": None,
+                    "hat": None,
+                    "shiny": False,
+                    "min_stat": None,
+                }
+
+        curses.noecho()
+        curses.curs_set(0)
+
+    def apply_salt(self, salt):
+        """Apply salt to Claude config"""
+        home = Path.home()
+        config_paths = [
+            home / ".claude" / ".config.json",
+            home / ".claude.json",
+        ]
+
+        config_path = None
+        for p in config_paths:
+            if p.exists():
+                config_path = p
+                break
+
+        if not config_path:
+            self.message = "ERROR: Claude config not found!"
+            return
+
+        try:
+            # Backup
+            backup_path = config_path.with_suffix(config_path.suffix + '.bak')
+            backup_path.write_text(config_path.read_text())
+
+            # Read and update
+            config = json.loads(config_path.read_text())
+
+            if 'buddy' not in config:
+                config['buddy'] = {}
+            config['buddy']['salt'] = salt
+
+            config_path.write_text(json.dumps(config, indent=2))
+            self.message = f"✓ Salt applied! Backup: {backup_path.name}"
+
+        except Exception as e:
+            self.message = f"ERROR: {e}"
+
+    def run(self, stdscr):
+        """Main curses loop"""
+        # Setup colors
+        curses.start_color()
+        curses.use_default_colors()
+        curses.init_pair(1, curses.COLOR_CYAN, -1)      # Title
+        curses.init_pair(2, curses.COLOR_GREEN, -1)     # Sprite normal
+        curses.init_pair(3, curses.COLOR_YELLOW, -1)    # Sprite shiny / face
+        curses.init_pair(4, curses.COLOR_WHITE, -1)     # Info
+        curses.init_pair(5, curses.COLOR_RED, -1)       # Error
+        curses.init_pair(6, curses.COLOR_BLACK, curses.COLOR_WHITE)  # Controls
+
+        curses.noecho()
+        curses.curs_set(0)
+        stdscr.timeout(100)  # Non-blocking input
+
+        # Generate first buddy
+        salt, buddy = self.generate_next()
+        if not salt:
+            self.message = "Could not generate buddy with current filters"
+            return
+
+        self.history.append((salt, buddy))
+        self.history_index = 0
+
+        while True:
+            self.draw_main_screen(stdscr, salt, buddy)
+
+            key = stdscr.getch()
+
+            if key == ord('q'):
+                # Quit
+                break
+            elif key in (ord('n'), curses.KEY_RIGHT):
+                # Next
+                salt, buddy = self.generate_next()
+                if salt:
+                    self.history = self.history[:self.history_index + 1]
+                    self.history.append((salt, buddy))
+                    self.history_index += 1
+            elif key in (ord('p'), curses.KEY_LEFT):
+                # Previous
+                if self.history_index > 0:
+                    self.history_index -= 1
+                    salt, buddy = self.history[self.history_index]
+            elif key == ord('r'):
+                # Re-roll
+                salt, buddy = self.generate_next()
+                if salt:
+                    self.history = self.history[:self.history_index + 1]
+                    self.history.append((salt, buddy))
+                    self.history_index += 1
+            elif key == ord('c'):
+                # Change filters
+                self.run_filter_config(stdscr)
+                # Generate new with updated filters
+                salt, buddy = self.generate_next()
+                if salt:
+                    self.history = []
+                    self.history.append((salt, buddy))
+                    self.history_index = 0
+            elif key == ord('a'):
+                # Apply
+                self.apply_salt(salt)
+            elif key == ord('s'):
+                # Show salt
+                self.message = f"Salt: {salt}"
+
+
+def cmd_interactive(args):
+    """Start interactive TUI mode"""
+    user_id = get_arg(args, "--user-id") or detect_user_id() or "anon"
+    viewer = InteractiveBuddyViewer(user_id)
+    curses.wrapper(viewer.run)
+
+
 def print_help():
     print("""Claude Buddy Lab - Search, preview, and customize your Claude Code buddy
 
 Usage: python cli.py <command> [options]
 
 Commands:
-  preview    Preview a buddy for a given salt
-  search     Search for buddies matching criteria
-  web        Start web interface
+  preview      Preview a buddy for a given salt
+  search       Search for buddies matching criteria
+  web          Start web interface
+  interactive  Start interactive TUI mode
 
 Examples:
   python cli.py preview
@@ -420,6 +751,7 @@ Examples:
   python cli.py search --species owl --rarity epic
   python cli.py search --shiny --total 500000
   python cli.py web --open
+  python cli.py interactive
 """)
 
 
@@ -437,6 +769,8 @@ def main():
         cmd_search(args)
     elif cmd == "web":
         cmd_web(args)
+    elif cmd == "interactive":
+        cmd_interactive(args)
     else:
         print(f"Unknown command: {cmd}")
         print_help()

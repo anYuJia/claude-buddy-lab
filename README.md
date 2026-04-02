@@ -14,6 +14,9 @@ cd claude-buddy-lab
 # Preview your current buddy
 python3 cli.py preview
 
+# Start interactive terminal interface
+python3 cli.py interactive
+
 # Start web interface
 python3 cli.py web
 ```
@@ -32,6 +35,17 @@ python3 cli.py preview
 
 # Preview with custom salt
 python3 cli.py preview --salt my-custom-salt
+
+# Interactive terminal interface (NEW!)
+python3 cli.py interactive
+
+# Controls in interactive mode:
+#   n/→  Next buddy
+#   p/←  Previous buddy
+#   r    Re-roll
+#   c    Change filters
+#   a    Apply salt
+#   q    Quit
 
 # Search for specific species
 python3 cli.py search --species owl --rarity epic
