@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Claude Buddy Lab</title>
+  <style>
+    :root {
+      --bg: #0d1117;
+      --panel: #161b22;
+      --border: #30363d;
+      --text: #c9d1d9;
+      --muted: #8b949e;
+      --accent: #58a6ff;
+      --success: #3fb950;
+      --warning: #d29922;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      line-height: 1.5;
+    }
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    header {
+      text-align: center;
+      padding: 30px 0;
+      border-bottom: 1px solid var(--border);
+      margin-bottom: 30px;
+    }
+    header h1 {
+      color: var(--accent);
+      font-size: 2em;
+      margin-bottom: 10px;
+    }
+    header p { color: var(--muted); }
+    .grid {
+      display: grid;
+      grid-template-columns: 320px 1fr;
+      gap: 20px;
+    }
+    @media (max-width: 900px) {
+      .grid { grid-template-columns: 1fr; }
+    }
+    .panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+    }
+    .panel h2 {
+      color: var(--accent);
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 0.1em;
+      margin-bottom: 15px;
+    }
+    label {
+      display: block;
+      font-size: 0.85em;
+      color: var(--muted);
+      margin-bottom: 5px;
+    }
+    input, select {
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 15px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 4px;
+      color: var(--text);
+      font-size: 14px;
+    }
+    input:focus, select:focus {
+      outline: none;
+      border-color: var(--accent);
+    }
+    .row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    button {
+      width: 100%;
+      padding: 10px 16px;
+      margin-top: 5px;
+      background: #238636;
+      border: 1px solid rgba(240,246,252,0.1);
+      border-radius: 6px;
+      color: white;
+      font-size: 14px;
+      cursor: pointer;
+      transition: background 0.2s;
+    }
+    button:hover { background: #2ea043; }
+    button.secondary {
+      background: #21262d;
+    }
+    button.secondary:hover { background: #30363d; }
+    .preview-area {
+      font-family: "JetBrains Mono", "Fira Code", monospace;
+      font-size: 14px;
+      line-height: 1.4;
+      white-space: pre;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 20px;
+      margin: 15px 0;
+      min-height: 150px;
+      color: var(--success);
+    }
+    .preview-area.shiny {
+      color: #ffd700;
+      border-color: #ffd700;
+      box-shadow: 0 0 20px rgba(255, 215, 0, 0.2);
+    }
+    .meta {
+      font-size: 0.9em;
+      margin: 15px 0;
+    }
+    .meta div {
+      display: flex;
+      justify-content: space-between;
+      padding: 5px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .meta div:last-child { border-bottom: none; }
+    .meta strong { color: var(--muted); }
+    .stats {
+      margin: 15px 0;
+    }
+    .stat {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 8px 0;
+      font-size: 0.85em;
+    }
+    .stat-name { width: 100px; color: var(--muted); }
+    .stat-bar {
+      flex: 1;
+      height: 8px;
+      background: var(--bg);
+      border-radius: 4px;
+      overflow: hidden;
+    }
+    .stat-bar span {
+      display: block;
+      height: 100%;
+      background: linear-gradient(90deg, var(--success), #3fb950);
+    }
+    .stat-value { width: 30px; text-align: right; }
+    .results {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    .result-card {
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 15px;
+    }
+    .result-card .sprite {
+      font-family: "JetBrains Mono", monospace;
+      font-size: 11px;
+      color: var(--success);
+      margin-bottom: 10px;
+    }
+    .result-card .salt {
+      color: var(--warning);
+      font-size: 0.85em;
+      word-break: break-all;
+      margin-bottom: 8px;
+    }
+    .result-card .info {
+      font-size: 0.85em;
+      color: var(--muted);
+      margin-bottom: 10px;
+    }
+    .status {
+      color: var(--muted);
+      font-size: 0.9em;
+      margin: 10px 0;
+    }
+    .checkbox-label {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin: 10px 0;
+    }
+    .checkbox-label input {
+      width: auto;
+      margin: 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>🧪 Claude Buddy Lab</h1>
+      <p>Search, preview, and customize your Claude Code companion</p>
+    </header>
+
+    <div class="grid">
+      <div class="panel">
+        <h2>Preview</h2>
+        <label for="userId">User ID</label>
+        <input type="text" id="userId" placeholder="Auto-detected">
+
+        <label for="salt">Salt</label>
+        <input type="text" id="salt" value="friend-2026-401">
+
+        <button id="previewBtn">Preview Buddy</button>
+
+        <hr style="border: none; border-top: 1px solid var(--border); margin: 20px 0;">
+
+        <h2>Search</h2>
+        <label for="species">Species</label>
+        <select id="species">
+          <option value="">Any</option>
+        </select>
+
+        <div class="row">
+          <div>
+            <label for="rarity">Rarity</label>
+            <select id="rarity">
+              <option value="">Any</option>
+            </select>
+          </div>
+          <div>
+            <label for="eye">Eye</label>
+            <select id="eye">
+              <option value="">Any</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="hat">Hat</label>
+            <select id="hat">
+              <option value="">Any</option>
+            </select>
+          </div>
+          <div>
+            <label for="total">Attempts</label>
+            <input type="number" id="total" value="500000">
+          </div>
+        </div>
+
+        <div class="row">
+          <div>
+            <label for="minStat">Min Stat</label>
+            <input type="text" id="minStat" placeholder="CHAOS:80">
+          </div>
+          <div>
+            <label for="prefix">Prefix</label>
+            <input type="text" id="prefix" value="lab-">
+          </div>
+        </div>
+
+        <label class="checkbox-label">
+          <input type="checkbox" id="shiny">
+          <span>Shiny only</span>
+        </label>
+
+        <button id="searchBtn" class="secondary">Search</button>
+      </div>
+
+      <div>
+        <div class="panel">
+          <h2>Preview</h2>
+          <div class="status" id="status">Loading...</div>
+          <div id="previewContainer"></div>
+        </div>
+
+        <div class="panel" style="margin-top: 20px;">
+          <h2>Results</h2>
+          <div class="status" id="searchStatus">No search yet</div>
+          <div class="results" id="results"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const $ = id => document.getElementById(id);
+
+    // Load metadata on page load
+    async function loadMeta() {
+      try {
+        const res = await fetch('/api/meta');
+        const meta = await res.json();
+
+        // Fill selects
+        fillSelect($('species'), meta.species);
+        fillSelect($('rarity'), meta.rarities);
+        fillSelect($('eye'), meta.eyes);
+        fillSelect($('hat'), meta.hats);
+
+        if (meta.detectedUserId) {
+          $('userId').value = meta.detectedUserId;
+          $('status').textContent = `Loaded user ID: ${meta.detectedUserId}`;
+        } else {
+          $('status').textContent = 'Could not detect user ID';
+        }
+        $('salt').value = meta.defaultSalt;
+      } catch (e) {
+        $('status').textContent = 'Error loading metadata: ' + e.message;
+      }
+    }
+
+    function fillSelect(select, values) {
+      for (const v of values) {
+        const opt = document.createElement('option');
+        opt.value = v;
+        opt.textContent = v.charAt(0).toUpperCase() + v.slice(1);
+        select.appendChild(opt);
+      }
+    }
+
+    async function preview() {
+      const userId = $('userId').value || 'anon';
+      const salt = $('salt').value;
+
+      $('status').textContent = 'Generating preview...';
+
+      try {
+        const res = await fetch('/api/preview', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, salt })
+        });
+        const data = await res.json();
+        renderPreview(data);
+        $('status').textContent = 'Preview updated';
+      } catch (e) {
+        $('status').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    function renderPreview(data) {
+      const { buddy, sprite, salt, userId } = data;
+      const spriteText = sprite.join('\n');
+
+      let html = `
+        <div class="preview-area ${buddy.shiny ? 'shiny' : ''}">${spriteText}</div>
+        <div class="meta">
+          <div><strong>Species</strong> <span>${buddy.species}</span></div>
+          <div><strong>Rarity</strong> <span>${buddy.rarity}</span></div>
+          <div><strong>Eye</strong> <span>${buddy.eye}</span></div>
+          <div><strong>Hat</strong> <span>${buddy.hat}</span></div>
+          <div><strong>Shiny</strong> <span>${buddy.shiny ? '✦ Yes' : 'No'}</span></div>
+          <div><strong>Salt</strong> <span>${salt}</span></div>
+          <div><strong>User ID</strong> <span>${userId || 'anon'}</span></div>
+        </div>
+        <div class="stats">
+      `;
+
+      for (const [name, value] of Object.entries(buddy.stats)) {
+        html += `
+          <div class="stat">
+            <span class="stat-name">${name}</span>
+            <div class="stat-bar"><span style="width:${value}%"></span></div>
+            <span class="stat-value">${value}</span>
+          </div>
+        `;
+      }
+
+      html += '</div>';
+      $('previewContainer').innerHTML = html;
+    }
+
+    async function search() {
+      const userId = $('userId').value || 'anon';
+      const filters = {
+        species: $('species').value,
+        rarity: $('rarity').value,
+        eye: $('eye').value,
+        hat: $('hat').value,
+        shiny: $('shiny').checked,
+        minStat: $('minStat').value,
+        total: parseInt($('total').value) || 500000,
+        prefix: $('prefix').value || 'lab-',
+      };
+
+      $('searchStatus').textContent = 'Searching...';
+      $('results').innerHTML = '';
+
+      try {
+        const res = await fetch('/api/search', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ userId, ...filters })
+        });
+        const data = await res.json();
+
+        if (data.matches.length === 0) {
+          $('searchStatus').textContent = 'No matches found';
+          return;
+        }
+
+        $('searchStatus').textContent = `Found ${data.matches.length} matches`;
+
+        for (const m of data.matches) {
+          const card = document.createElement('div');
+          card.className = 'result-card';
+          card.innerHTML = `
+            <div class="sprite">${m.sprite.join('\n')}</div>
+            <div class="salt">${m.salt}</div>
+            <div class="info">
+              ${m.buddy.rarity} ${m.buddy.species}<br>
+              Eye: ${m.buddy.eye} | Hat: ${m.buddy.hat}
+              ${m.buddy.shiny ? ' | ✦ Shiny' : ''}
+            </div>
+          `;
+
+          const btn = document.createElement('button');
+          btn.textContent = 'Preview This';
+          btn.className = 'secondary';
+          btn.onclick = () => {
+            $('salt').value = m.salt;
+            renderPreview({ ...m, userId });
+          };
+          card.appendChild(btn);
+          $('results').appendChild(card);
+        }
+      } catch (e) {
+        $('searchStatus').textContent = 'Error: ' + e.message;
+      }
+    }
+
+    // Event listeners
+    $('previewBtn').onclick = preview;
+    $('searchBtn').onclick = search;
+
+    // Initialize
+    loadMeta();
+  </script>
+</body>
+</html>
