@@ -6,9 +6,10 @@
 [![Flask](https://img.shields.io/badge/Flask-Web_UI-000000?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
 [![License](https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge)](LICENSE)
 
-**Search, preview, and apply custom buddies to Claude Code**
+Every Claude Code user has a unique ASCII buddy companion in the terminal.
+It's determined by `hash(userId + salt)` — but the salt is hardcoded in the binary.
 
-**Binary patching. One click. Done.**
+**This tool lets you search millions of salts, find the buddy you want, and patch it in. One click.**
 
 [中文](README_CN.md)
 

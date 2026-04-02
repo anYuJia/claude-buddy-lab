@@ -6,9 +6,10 @@
 [![Flask](https://img.shields.io/badge/Flask-Web_UI-000000?style=for-the-badge&logo=flask)](https://flask.palletsprojects.com)
 [![License](https://img.shields.io/badge/License-MIT-10b981?style=for-the-badge)](LICENSE)
 
-**搜索、预览并应用自定义 Claude Code 伙伴**
+每个 Claude Code 用户在终端里都有一个独特的 ASCII 伙伴。
+它由 `hash(userId + salt)` 决定 — 但 salt 是硬编码在二进制文件中的。
 
-**二进制修补，一键搞定。**
+**本工具让你搜索数百万个 salt，找到想要的伙伴，一键修补进去。**
 
 [English](README.md)
 
