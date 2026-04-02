@@ -307,7 +307,7 @@ def render_face(bones: dict) -> str:
         "turtle": f"[{eye}_{eye}]",
         "snail": f"{eye}(@)",
         "ghost": f"/{eye}{eye}\\",
-        "axolotl": f"}{eye}.{eye}{{",
+        "axolotl": f"}}{eye}.{eye}{{{{",
         "capybara": f"({eye}oo{eye})",
         "cactus": f"|{eye}  {eye}|",
         "robot": f"[{eye}{eye}]",
