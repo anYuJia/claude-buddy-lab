@@ -896,7 +896,16 @@
         'species.robot': 'Robot',
         'species.rabbit': 'Rabbit',
         'species.mushroom': 'Mushroom',
-        'species.chonk': 'Chonk'
+        'species.chonk': 'Chonk',
+        // Hat names
+        'hat.none': 'None',
+        'hat.crown': 'Crown',
+        'hat.tophat': 'Top Hat',
+        'hat.propeller': 'Propeller',
+        'hat.halo': 'Halo',
+        'hat.wizard': 'Wizard',
+        'hat.beanie': 'Beanie',
+        'hat.tinyduck': 'Tiny Duck'
       },
       zh: {
         'header.subtitle': '发现你的完美 Claude Code 伙伴',
@@ -974,7 +983,16 @@
         'species.robot': '机器人',
         'species.rabbit': '兔子',
         'species.mushroom': '蘑菇',
-        'species.chonk': '胖猫'
+        'species.chonk': '胖猫',
+        // Hat names - 中文翻译
+        'hat.none': '无',
+        'hat.crown': '皇冠',
+        'hat.tophat': '礼帽',
+        'hat.propeller': '螺旋桨帽',
+        'hat.halo': '光环',
+        'hat.wizard': '巫师帽',
+        'hat.beanie': '毛线帽',
+        'hat.tinyduck': '小鸭子'
       }
     };
 
@@ -1078,7 +1096,7 @@
     }
 
     function fillSelect(select, values, defaultKey, useRarity = false) {
-      select.innerHTML = '';
+      while (select.firstChild) select.removeChild(select.firstChild);
       const defaultOpt = document.createElement('option');
       defaultOpt.value = '';
       defaultOpt.textContent = translations[currentLang][defaultKey] || defaultKey;
@@ -1087,11 +1105,10 @@
       for (const v of values) {
         const opt = document.createElement('option');
         opt.value = v;
-        if (v === 'none') {
-          opt.textContent = translations[currentLang]['option.noneOnly'] || 'None';
-        } else if (useRarity) {
-          const rarityKey = `rarity.${v}`;
-          opt.textContent = translations[currentLang][rarityKey] || v;
+        if (useRarity) {
+          opt.textContent = translations[currentLang][`rarity.${v}`] || v;
+        } else if (translations[currentLang][`hat.${v}`]) {
+          opt.textContent = translations[currentLang][`hat.${v}`];
         } else {
           opt.textContent = v.charAt(0).toUpperCase() + v.slice(1);
         }
@@ -1175,7 +1192,7 @@
             </div>
             <div class="info-pill">
               <div class="label">${t['info.hat']}</div>
-              <div class="value">${buddy.hat || '-'}</div>
+              <div class="value">${t['hat.' + buddy.hat] || buddy.hat || '-'}</div>
             </div>
             ${buddy.shiny ? `
             <div class="info-pill" style="border-color: var(--shiny);">
@@ -1233,7 +1250,7 @@
           <div class="salt">${escapeHtml(m.salt)}</div>
           <div class="details">
             <span>${t['info.eye']}: ${escapeHtml(m.buddy.eye)}</span>
-            <span>${t['info.hat']}: ${m.buddy.hat || '-'}</span>
+            <span>${t['info.hat']}: ${t['hat.' + m.buddy.hat] || m.buddy.hat || '-'}</span>
           </div>
           <div style="display:flex;gap:8px;margin-top:12px;">
             <button class="secondary" style="flex:1;" data-action="preview">${t['btn.previewThis']}</button>
