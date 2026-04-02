@@ -44,7 +44,6 @@
 
     .font-mono { font-family: 'JetBrains Mono', monospace; }
 
-    /* Animated background */
     .bg-gradient {
       position: fixed;
       top: 0;
@@ -66,7 +65,39 @@
       z-index: 1;
     }
 
-    /* Header */
+    /* Language Switcher */
+    .lang-switcher {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      display: flex;
+      gap: 8px;
+      z-index: 100;
+    }
+
+    .lang-btn {
+      padding: 8px 14px;
+      background: var(--bg-card);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      font-size: 0.85rem;
+      font-weight: 500;
+      color: var(--text-secondary);
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+
+    .lang-btn:hover {
+      border-color: var(--border-highlight);
+      color: var(--text-primary);
+    }
+
+    .lang-btn.active {
+      background: var(--accent);
+      border-color: var(--accent);
+      color: white;
+    }
+
     header {
       text-align: center;
       margin-bottom: 50px;
@@ -88,7 +119,6 @@
       font-size: 1.1rem;
     }
 
-    /* Layout */
     .layout {
       display: grid;
       grid-template-columns: 380px 1fr;
@@ -99,7 +129,6 @@
       .layout { grid-template-columns: 1fr; }
     }
 
-    /* Panels */
     .panel {
       background: var(--bg-secondary);
       border: 1px solid var(--border);
@@ -129,7 +158,6 @@
       font-size: 1.2rem;
     }
 
-    /* Forms */
     .form-group {
       margin-bottom: 16px;
     }
@@ -172,7 +200,6 @@
       gap: 12px;
     }
 
-    /* Checkbox */
     .checkbox-wrapper {
       display: flex;
       align-items: center;
@@ -201,7 +228,6 @@
       color: var(--text-secondary);
     }
 
-    /* Buttons */
     button {
       width: 100%;
       padding: 14px 20px;
@@ -243,7 +269,6 @@
       margin-top: 10px;
     }
 
-    /* Preview Card */
     .preview-card {
       background: var(--bg-card);
       border: 1px solid var(--border);
@@ -286,14 +311,6 @@
       z-index: 1;
     }
 
-    .sprite-container pre {
-      font-family: 'JetBrains Mono', monospace;
-      font-size: 13px;
-      line-height: 1.5;
-      display: inline-block;
-      text-align: left;
-    }
-
     .sprite-container.shiny pre {
       color: var(--shiny);
       text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
@@ -303,7 +320,15 @@
       color: var(--success);
     }
 
-    /* Buddy Info Grid */
+    .sprite-container pre {
+      font-family: 'JetBrains Mono', monospace;
+      font-size: 13px;
+      line-height: 1.5;
+      display: inline-block;
+      text-align: left;
+      white-space: pre;
+    }
+
     .buddy-info {
       display: grid;
       grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
@@ -349,7 +374,6 @@
     .rarity-epic { background: rgba(168, 85, 247, 0.2); color: var(--rarity-epic); }
     .rarity-legendary { background: rgba(245, 158, 11, 0.2); color: var(--rarity-legendary); }
 
-    /* Stats */
     .stats-container {
       background: var(--bg-input);
       border: 1px solid var(--border);
@@ -400,7 +424,6 @@
       font-family: 'JetBrains Mono', monospace;
     }
 
-    /* Results Grid */
     .results-grid {
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
@@ -413,7 +436,6 @@
       border-radius: 12px;
       padding: 16px;
       transition: all 0.2s;
-      cursor: pointer;
     }
 
     .result-card:hover {
@@ -424,10 +446,10 @@
     .result-card .sprite {
       font-family: 'JetBrains Mono', monospace;
       font-size: 10px;
-      line-height: 1.4;
+      line-height: 1.3;
       color: var(--success);
       margin-bottom: 12px;
-      white-space: pre;
+      white-space: pre-wrap;
       overflow-x: auto;
     }
 
@@ -469,7 +491,6 @@
       font-size: 0.8rem;
     }
 
-    /* Status messages */
     .status {
       padding: 12px 16px;
       border-radius: 10px;
@@ -495,14 +516,12 @@
       border: 1px solid rgba(239, 68, 68, 0.3);
     }
 
-    /* Divider */
     .divider {
       height: 1px;
       background: var(--border);
       margin: 24px 0;
     }
 
-    /* Tab-like section headers */
     .section-tabs {
       display: flex;
       gap: 8px;
@@ -532,7 +551,6 @@
       color: white;
     }
 
-    /* Loading spinner */
     .spinner {
       display: inline-block;
       width: 16px;
@@ -547,7 +565,6 @@
       to { transform: rotate(360deg); }
     }
 
-    /* Face display */
     .face-display {
       text-align: center;
       padding: 16px;
@@ -565,9 +582,15 @@
   <div class="bg-gradient"></div>
 
   <div class="container">
+    <!-- Language Switcher -->
+    <div class="lang-switcher">
+      <button class="lang-btn active" data-lang="en">EN</button>
+      <button class="lang-btn" data-lang="zh">中文</button>
+    </div>
+
     <header>
       <h1>🧪 Claude Buddy Lab</h1>
-      <p>Discover your perfect Claude Code companion</p>
+      <p data-i18n="header.subtitle">Discover your perfect Claude Code companion</p>
     </header>
 
     <div class="layout">
@@ -575,89 +598,89 @@
       <div class="panel">
         <div class="panel-header">
           <span class="icon">🔬</span>
-          <h2>Configuration</h2>
+          <h2 data-i18n="panel.config">Configuration</h2>
         </div>
 
         <div class="form-group">
-          <label for="userId">User ID</label>
-          <input type="text" id="userId" placeholder="Auto-detected">
+          <label for="userId" data-i18n="label.userId">User ID</label>
+          <input type="text" id="userId" data-i18n-placeholder="placeholder.autoDetect">
         </div>
 
         <div class="form-group">
           <label for="salt">Salt</label>
-          <input type="text" id="salt" value="friend-2026-401" placeholder="Enter salt">
+          <input type="text" id="salt" value="friend-2026-401" data-i18n-placeholder="placeholder.enterSalt">
         </div>
 
         <button id="previewBtn" class="primary">
-          <span>✨</span> Preview Buddy
+          <span>✨</span> <span data-i18n="btn.preview">Preview Buddy</span>
         </button>
 
         <div class="divider"></div>
 
         <div class="section-tabs">
-          <div class="tab active" data-section="search">Search</div>
-          <div class="tab" data-section="filters">Filters</div>
+          <div class="tab active" data-section="search" data-i18n="tab.search">Search</div>
+          <div class="tab" data-section="filters" data-i18n="tab.filters">Filters</div>
         </div>
 
         <!-- Search Section -->
         <div id="searchSection">
           <div class="form-group">
-            <label for="species">Species</label>
+            <label for="species" data-i18n="label.species">Species</label>
             <select id="species">
-              <option value="">Any Species</option>
+              <option value="" data-i18n="option.anySpecies">Any Species</option>
             </select>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="rarity">Rarity</label>
+              <label for="rarity" data-i18n="label.rarity">Rarity</label>
               <select id="rarity">
-                <option value="">Any</option>
+                <option value="" data-i18n="option.any">Any</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="eye">Eye Type</label>
+              <label for="eye" data-i18n="label.eye">Eye Type</label>
               <select id="eye">
-                <option value="">Any</option>
+                <option value="" data-i18n="option.any">Any</option>
               </select>
             </div>
           </div>
 
           <div class="form-row">
             <div class="form-group">
-              <label for="hat">Hat</label>
+              <label for="hat" data-i18n="label.hat">Hat</label>
               <select id="hat">
-                <option value="">None Only</option>
+                <option value="" data-i18n="option.noneOnly">None Only</option>
               </select>
             </div>
             <div class="form-group">
-              <label for="total">Attempts</label>
+              <label for="total" data-i18n="label.attempts">Attempts</label>
               <input type="number" id="total" value="500000" min="1000" max="10000000">
             </div>
           </div>
         </div>
 
-        <!-- Filters Section (hidden by default) -->
+        <!-- Filters Section -->
         <div id="filtersSection" style="display: none;">
           <div class="form-row">
             <div class="form-group">
-              <label for="minStat">Min Stat</label>
-              <input type="text" id="minStat" placeholder="CHAOS:80">
+              <label for="minStat" data-i18n="label.minStat">Min Stat</label>
+              <input type="text" id="minStat" data-i18n-placeholder="placeholder.chaos80">
             </div>
             <div class="form-group">
-              <label for="prefix">Prefix</label>
+              <label for="prefix" data-i18n="label.prefix">Prefix</label>
               <input type="text" id="prefix" value="lab-">
             </div>
           </div>
 
           <label class="checkbox-wrapper" for="shiny">
             <input type="checkbox" id="shiny">
-            <span>✨ Shiny Only (1% chance)</span>
+            <span data-i18n="label.shinyOnly">✨ Shiny Only (1% chance)</span>
           </label>
         </div>
 
         <button id="searchBtn" class="secondary" style="margin-top: 15px;">
-          <span>🔍</span> Search
+          <span>🔍</span> <span data-i18n="btn.search">Search</span>
         </button>
       </div>
 
@@ -667,11 +690,11 @@
         <div class="panel" style="margin-bottom: 20px;">
           <div class="panel-header">
             <span class="icon">👁️</span>
-            <h2>Preview</h2>
+            <h2 data-i18n="panel.preview">Preview</h2>
           </div>
 
           <div id="status" class="status loading">
-            <span class="spinner"></span> Initializing...
+            <span class="spinner"></span> <span data-i18n="status.initializing">Initializing...</span>
           </div>
 
           <div id="previewContainer"></div>
@@ -681,10 +704,10 @@
         <div class="panel">
           <div class="panel-header">
             <span class="icon">📋</span>
-            <h2>Search Results</h2>
+            <h2 data-i18n="panel.results">Search Results</h2>
           </div>
 
-          <div id="searchStatus" class="status" style="background: var(--bg-input);">
+          <div id="searchStatus" class="status" style="background: var(--bg-input);" data-i18n="status.noSearch">
             No search performed yet
           </div>
 
@@ -695,18 +718,184 @@
   </div>
 
   <script>
+    // Translations
+    const translations = {
+      en: {
+        'header.subtitle': 'Discover your perfect Claude Code companion',
+        'panel.config': 'Configuration',
+        'panel.preview': 'Preview',
+        'panel.results': 'Search Results',
+        'label.userId': 'User ID',
+        'label.species': 'Species',
+        'label.rarity': 'Rarity',
+        'label.eye': 'Eye Type',
+        'label.hat': 'Hat',
+        'label.attempts': 'Attempts',
+        'label.minStat': 'Min Stat',
+        'label.prefix': 'Prefix',
+        'label.shinyOnly': '✨ Shiny Only (1% chance)',
+        'tab.search': 'Search',
+        'tab.filters': 'Filters',
+        'btn.preview': 'Preview Buddy',
+        'btn.search': 'Search',
+        'btn.previewThis': 'Preview This',
+        'option.any': 'Any',
+        'option.anySpecies': 'Any Species',
+        'option.noneOnly': 'None Only',
+        'placeholder.autoDetect': 'Auto-detected',
+        'placeholder.enterSalt': 'Enter salt',
+        'placeholder.chaos80': 'CHAOS:80',
+        'status.initializing': 'Initializing...',
+        'status.noSearch': 'No search performed yet',
+        'status.searching': 'Searching...',
+        'status.generatingPreview': 'Generating preview...',
+        'status.previewGenerated': '✓ Preview generated',
+        'status.found': '✓ Found',
+        'status.matches': 'match',
+        'status.noMatches': 'No matches found. Try relaxing filters.',
+        'rarity.common': 'Common',
+        'rarity.uncommon': 'Uncommon',
+        'rarity.rare': 'Rare',
+        'rarity.epic': 'Epic',
+        'rarity.legendary': 'Legendary',
+        'info.species': 'Species',
+        'info.rarity': 'Rarity',
+        'info.eye': 'Eye',
+        'info.hat': 'Hat',
+        'info.shiny': 'Shiny',
+        'info.yes': 'YES',
+        'info.eye_label': 'Eye',
+        'info.hat_label': 'Hat',
+        'stat.DEBUGGING': 'DEBUGGING',
+        'stat.PATIENCE': 'PATIENCE',
+        'stat.CHAOS': 'CHAOS',
+        'stat.WISDOM': 'WISDOM',
+        'stat.SNARK': 'SNARK'
+      },
+      zh: {
+        'header.subtitle': '发现你的完美 Claude Code 伙伴',
+        'panel.config': '配置',
+        'panel.preview': '预览',
+        'panel.results': '搜索结果',
+        'label.userId': '用户 ID',
+        'label.species': '物种',
+        'label.rarity': '稀有度',
+        'label.eye': '眼睛',
+        'label.hat': '帽子',
+        'label.attempts': '尝试次数',
+        'label.minStat': '最低属性',
+        'label.prefix': '前缀',
+        'label.shinyOnly': '✨ 仅闪光 (1% 概率)',
+        'tab.search': '搜索',
+        'tab.filters': '过滤器',
+        'btn.preview': '预览伙伴',
+        'btn.search': '搜索',
+        'btn.previewThis': '预览这个',
+        'option.any': '任意',
+        'option.anySpecies': '任意物种',
+        'option.noneOnly': '仅无帽',
+        'placeholder.autoDetect': '自动检测',
+        'placeholder.enterSalt': '输入盐值',
+        'placeholder.chaos80': 'CHAOS:80',
+        'status.initializing': '初始化中...',
+        'status.noSearch': '尚未执行搜索',
+        'status.searching': '搜索中...',
+        'status.generatingPreview': '生成预览中...',
+        'status.previewGenerated': '✓ 预览已生成',
+        'status.found': '✓ 找到',
+        'status.matches': '个结果',
+        'status.noMatches': '未找到匹配结果，请尝试放宽筛选条件。',
+        'rarity.common': '普通',
+        'rarity.uncommon': '不凡',
+        'rarity.rare': '稀有',
+        'rarity.epic': '史诗',
+        'rarity.legendary': '传说',
+        'info.species': '物种',
+        'info.rarity': '稀有度',
+        'info.eye': '眼睛',
+        'info.hat': '帽子',
+        'info.shiny': '闪光',
+        'info.yes': '是',
+        'info.eye_label': '眼睛',
+        'info.hat_label': '帽子',
+        'stat.DEBUGGING': '调试',
+        'stat.PATIENCE': '耐心',
+        'stat.CHAOS': '混乱',
+        'stat.WISDOM': '智慧',
+        'stat.SNARK': '讽刺'
+      }
+    };
+
+    let currentLang = 'en';
+
+    function setLanguage(lang) {
+      currentLang = lang;
+
+      // Update buttons
+      document.querySelectorAll('.lang-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.dataset.lang === lang);
+      });
+
+      // Update all elements with data-i18n
+      document.querySelectorAll('[data-i18n]').forEach(el => {
+        const key = el.dataset.i18n;
+        if (translations[lang][key]) {
+          el.textContent = translations[lang][key];
+        }
+      });
+
+      // Update placeholders
+      document.querySelectorAll('[data-i18n-placeholder]').forEach(el => {
+        const key = el.dataset.i18nPlaceholder;
+        if (translations[lang][key]) {
+          el.placeholder = translations[lang][key];
+        }
+      });
+
+      // Re-render if there's a preview
+      if ($('previewContainer').innerHTML) {
+        const lastData = window.lastPreviewData;
+        if (lastData) {
+          renderPreview(lastData);
+        }
+      }
+
+      // Update search status
+      const searchStatus = $('searchStatus');
+      if (searchStatus.textContent.includes('✓ Found') || searchStatus.textContent.includes('找到')) {
+        const count = searchStatus.getAttribute('data-count');
+        if (count) {
+          updateSearchStatus(count);
+        }
+      }
+    }
+
+    // Language switcher event listeners
+    document.querySelectorAll('.lang-btn').forEach(btn => {
+      btn.addEventListener('click', () => {
+        setLanguage(btn.dataset.lang);
+      });
+    });
+
     const $ = id => document.getElementById(id);
 
-    // Initialize
+    function updateSearchStatus(count) {
+      const text = count === 1
+        ? `${translations[currentLang]['status.found']} ${count} ${translations[currentLang]['status.matches']}`
+        : `${translations[currentLang]['status.found']} ${count} ${translations[currentLang]['status.matches']}`;
+      $('searchStatus').textContent = text;
+      $('searchStatus').setAttribute('data-count', count);
+    }
+
     async function loadMeta() {
       try {
         const res = await fetch('/api/meta');
         const meta = await res.json();
 
-        fillSelect($('species'), meta.species, 'Any Species');
-        fillSelect($('rarity'), meta.rarities, 'Any');
-        fillSelect($('eye'), meta.eyes, 'Any');
-        fillSelect($('hat'), meta.hats, 'None Only', true);
+        fillSelect($('species'), meta.species, 'option.anySpecies');
+        fillSelect($('rarity'), meta.rarities, 'option.any', true);
+        fillSelect($('eye'), meta.eyes, 'option.any');
+        fillSelect($('hat'), meta.hats, 'option.noneOnly', true);
 
         if (meta.detectedUserId) {
           $('userId').value = meta.detectedUserId;
@@ -725,18 +914,22 @@
       }
     }
 
-    function fillSelect(select, values, defaultText, includeNone = false) {
+    function fillSelect(select, values, defaultKey, useRarity = false) {
       const defaultOpt = document.createElement('option');
       defaultOpt.value = '';
-      defaultOpt.textContent = defaultText;
+      defaultOpt.textContent = translations[currentLang][defaultKey] || defaultKey;
       select.appendChild(defaultOpt);
 
       for (const v of values) {
         const opt = document.createElement('option');
         opt.value = v;
-        opt.textContent = v.charAt(0).toUpperCase() + v.slice(1);
-        if (includeNone && v === 'none') {
-          opt.textContent = 'None';
+        if (useRarity) {
+          const rarityKey = `rarity.${v}`;
+          opt.textContent = translations[currentLang][rarityKey] || v;
+        } else if (v === 'none') {
+          opt.textContent = translations[currentLang]['option.noneOnly'] || 'None';
+        } else {
+          opt.textContent = v.charAt(0).toUpperCase() + v.slice(1);
         }
         select.appendChild(opt);
       }
@@ -759,13 +952,12 @@
       });
     });
 
-    // Preview function
     async function preview() {
       const userId = $('userId').value || 'anon';
       const salt = $('salt').value;
 
       $('status').className = 'status loading';
-      $('status').innerHTML = '<span class="spinner"></span> Generating preview...';
+      $('status').innerHTML = '<span class="spinner"></span> ' + translations[currentLang]['status.generatingPreview'];
 
       try {
         const res = await fetch('/api/preview', {
@@ -775,8 +967,9 @@
         });
         const data = await res.json();
         renderPreview(data);
+        window.lastPreviewData = data;
         $('status').className = 'status success';
-        $('status').textContent = '✓ Preview generated';
+        $('status').textContent = translations[currentLang]['status.previewGenerated'];
       } catch (e) {
         $('status').className = 'status error';
         $('status').textContent = 'Error: ' + e.message;
@@ -786,15 +979,10 @@
     function renderPreview(data) {
       const { buddy, sprite, salt, userId, face } = data;
       const spriteText = sprite.join('\n');
+      const t = translations[currentLang];
 
       const rarityClass = `rarity-${buddy.rarity}`;
-      const rarityDisplay = {
-        common: 'Common',
-        uncommon: 'Uncommon',
-        rare: 'Rare',
-        epic: 'Epic',
-        legendary: 'Legendary'
-      }[buddy.rarity];
+      const rarityDisplay = t[`rarity.${buddy.rarity}`] || buddy.rarity;
 
       let html = `
         <div class="preview-card ${buddy.shiny ? 'shiny' : ''}">
@@ -802,29 +990,29 @@
             <pre>${escapeHtml(spriteText)}</pre>
           </div>
 
-          ${!buddy.shiny ? '' : '<div class="face-display">✨ ' + escapeHtml(face) + ' ✨</div>'}
+          ${buddy.shiny ? `<div class="face-display">✨ ${escapeHtml(face)} ✨</div>` : ''}
 
           <div class="buddy-info">
             <div class="info-pill">
-              <div class="label">Species</div>
+              <div class="label">${t['info.species']}</div>
               <div class="value">${buddy.species}</div>
             </div>
             <div class="info-pill">
-              <div class="label">Rarity</div>
+              <div class="label">${t['info.rarity']}</div>
               <div class="value"><span class="rarity-badge ${rarityClass}">${rarityDisplay}</span></div>
             </div>
             <div class="info-pill">
-              <div class="label">Eye</div>
+              <div class="label">${t['info.eye']}</div>
               <div class="value">${escapeHtml(buddy.eye)}</div>
             </div>
             <div class="info-pill">
-              <div class="label">Hat</div>
-              <div class="value">${buddy.hat}</div>
+              <div class="label">${t['info.hat']}</div>
+              <div class="value">${buddy.hat || '-'}</div>
             </div>
             ${buddy.shiny ? `
             <div class="info-pill" style="border-color: var(--shiny);">
-              <div class="label">Shiny</div>
-              <div class="value" style="color: var(--shiny);">✦ YES</div>
+              <div class="label">${t['info.shiny']}</div>
+              <div class="value" style="color: var(--shiny);">✦ ${t['info.yes']}</div>
             </div>
             ` : ''}
           </div>
@@ -841,9 +1029,10 @@
       };
 
       for (const [name, value] of Object.entries(buddy.stats)) {
+        const statName = t[`stat.${name}`] || name;
         html += `
           <div class="stat-row">
-            <span class="stat-name">${name}</span>
+            <span class="stat-name">${statName}</span>
             <div class="stat-bar-container">
               <div class="stat-bar-fill" style="width: ${value}%; background: ${statColors[name]}"></div>
             </div>
@@ -856,7 +1045,6 @@
       $('previewContainer').innerHTML = html;
     }
 
-    // Search function
     async function search() {
       const userId = $('userId').value || 'anon';
       const filters = {
@@ -871,7 +1059,7 @@
       };
 
       $('searchStatus').className = 'status loading';
-      $('searchStatus').innerHTML = '<span class="spinner"></span> Searching...';
+      $('searchStatus').innerHTML = '<span class="spinner"></span> ' + translations[currentLang]['status.searching'];
       $('results').innerHTML = '';
 
       try {
@@ -884,18 +1072,18 @@
 
         if (data.matches.length === 0) {
           $('searchStatus').className = 'status';
-          $('searchStatus').textContent = 'No matches found. Try relaxing filters.';
+          $('searchStatus').textContent = translations[currentLang]['status.noMatches'];
           return;
         }
 
         $('searchStatus').className = 'status success';
-        $('searchStatus').textContent = `✓ Found ${data.matches.length} match${data.matches.length > 1 ? 'es' : ''}`;
+        updateSearchStatus(data.matches.length);
 
         for (const m of data.matches) {
           const card = document.createElement('div');
           card.className = 'result-card' + (m.buddy.shiny ? ' shiny' : '');
           card.innerHTML = `
-            <div class="sprite">${escapeHtml(m.sprite.join('\\n'))}</div>
+            <div class="sprite">${escapeHtml(m.sprite.join('\n'))}</div>
             <div class="header">
               <span class="rarity-badge rarity-${m.buddy.rarity}">${m.buddy.rarity}</span>
               <span class="name">${m.buddy.species}</span>
@@ -903,16 +1091,17 @@
             </div>
             <div class="salt">${escapeHtml(m.salt)}</div>
             <div class="details">
-              <span>Eye: ${escapeHtml(m.buddy.eye)}</span>
-              <span>Hat: ${m.buddy.hat}</span>
+              <span>${translations[currentLang]['info.eye']}: ${escapeHtml(m.buddy.eye)}</span>
+              <span>${translations[currentLang]['info.hat']}: ${m.buddy.hat || '-'}</span>
             </div>
-            <button class="secondary">Preview This</button>
+            <button class="secondary">${translations[currentLang]['btn.previewThis']}</button>
           `;
 
           card.querySelector('button').onclick = (e) => {
             e.stopPropagation();
             $('salt').value = m.salt;
             renderPreview({ ...m, userId });
+            window.lastPreviewData = { ...m, userId };
             window.scrollTo({ top: 0, behavior: 'smooth' });
           };
 
@@ -934,7 +1123,6 @@
     $('previewBtn').onclick = preview;
     $('searchBtn').onclick = search;
 
-    // Enter key to search
     $('filtersSection').addEventListener('keypress', (e) => {
       if (e.key === 'Enter') search();
     });
