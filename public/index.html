@@ -682,7 +682,7 @@
         </div>
 
         <div class="form-group">
-          <label for="salt">Salt</label>
+          <label for="salt" data-i18n="label.salt">Salt</label>
           <input type="text" id="salt" value="friend-2026-401" data-i18n-placeholder="placeholder.enterSalt">
         </div>
 
@@ -826,6 +826,7 @@
         'panel.preview': 'Preview',
         'panel.results': 'Search Results',
         'label.userId': 'User ID',
+        'label.salt': 'Salt',
         'label.species': 'Species',
         'label.rarity': 'Rarity',
         'label.eye': 'Eye Type',
@@ -849,6 +850,8 @@
         'placeholder.autoDetect': 'Auto-detected',
         'placeholder.enterSalt': 'Enter salt',
         'placeholder.chaos80': 'CHAOS:80',
+        'status.detected': '✓ User ID detected',
+        'status.anonymous': 'Using anonymous mode',
         'status.initializing': 'Initializing...',
         'status.noSearch': 'No search performed yet',
         'status.searching': 'Searching...',
@@ -913,6 +916,7 @@
         'panel.preview': '预览',
         'panel.results': '搜索结果',
         'label.userId': '用户 ID',
+        'label.salt': '盐值',
         'label.species': '物种',
         'label.rarity': '稀有度',
         'label.eye': '眼睛',
@@ -936,6 +940,8 @@
         'placeholder.autoDetect': '自动检测',
         'placeholder.enterSalt': '输入盐值',
         'placeholder.chaos80': '例如：CHAOS:80',
+        'status.detected': '✓ 用户 ID 已检测',
+        'status.anonymous': '匿名模式',
         'status.initializing': '初始化中...',
         'status.noSearch': '尚未执行搜索',
         'status.searching': '搜索中...',
@@ -1029,6 +1035,27 @@
         }
       });
 
+      // Re-render dropdowns
+      if (window.metaLoaded) {
+        const speciesVal = $('species').value;
+        const rarityVal = $('rarity').value;
+        const eyeVal = $('eye').value;
+        const hatVal = $('hat').value;
+        fillSpecies($('species'));
+        fillSelect($('rarity'), window.metaRarities, 'option.any', true);
+        fillSelect($('eye'), window.metaEyes, 'option.any');
+        fillSelect($('hat'), window.metaHats, 'option.any');
+        $('species').value = speciesVal;
+        $('rarity').value = rarityVal;
+        $('eye').value = eyeVal;
+        $('hat').value = hatVal;
+      }
+
+      // Update status message
+      if ($('status').classList.contains('success') && !window.lastPreviewData) {
+        $('status').textContent = translations[lang]['status.detected'];
+      }
+
       // Re-render preview if exists
       if (window.lastPreviewData) {
         renderPreview(window.lastPreviewData);
@@ -1061,15 +1088,19 @@
         fillSelect($('rarity'), meta.rarities, 'option.any', true);
         fillSelect($('eye'), meta.eyes, 'option.any');
         fillSelect($('hat'), meta.hats, 'option.any');
+        window.metaRarities = meta.rarities;
+        window.metaEyes = meta.eyes;
+        window.metaHats = meta.hats;
+        window.metaLoaded = true;
 
         if (meta.detectedUserId) {
           $('userId').value = meta.detectedUserId;
           $('status').className = 'status success';
-          $('status').textContent = '✓ User ID detected';
+          $('status').textContent = translations[currentLang]['status.detected'];
         } else {
           $('userId').value = 'anon';
           $('status').className = 'status';
-          $('status').textContent = 'Using anonymous mode';
+          $('status').textContent = translations[currentLang]['status.anonymous'];
         }
         $('salt').value = meta.defaultSalt;
 
